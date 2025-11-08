@@ -1,0 +1,21 @@
+import java.util.Map;
+import java.util.Collections;
+
+public final class UpgradeCard extends Card {
+
+    private int upgrades;
+
+    public UpgradeCard(int upgrades) {
+        super(Collections.emptyMap()); // upgrade card không tốn gem
+        this.upgrades = upgrades;
+    }
+
+    public int upgrades() {
+        return this.upgrades;
+    }
+
+    @Override
+    public String toString() {
+        return "Upgrade: " + this.upgrades;
+    }
+}
