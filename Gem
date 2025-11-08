@@ -1,0 +1,31 @@
+import java.util.Map;
+import java.util.EnumMap;
+
+public enum Gem {
+    YELLOW, GREEN, BLUE, PINK;
+
+    // In ra dạng đẹp: 3 YELLOW, 2 BLUE ...
+    public static String gemMapToString(Map<Gem, Integer> gems) {
+        if (gems == null || gems.isEmpty()) return "Nothing";
+        StringBuilder sb = new StringBuilder();
+        boolean first = true;
+        for (Gem gem : Gem.values()) {
+            if (gems.containsKey(gem) && gems.get(gem) > 0) {
+                if (!first) sb.append(", ");
+                sb.append(gems.get(gem)).append(" ").append(gem.name());
+                first = false;
+            }
+        }
+        return sb.toString();
+    }
+
+    // Nâng cấp gem lên cấp kế tiếp
+    public Gem upgrade() {
+        return switch (this) {
+            case YELLOW -> GREEN;
+            case GREEN -> BLUE;
+            case BLUE -> PINK;
+            default -> PINK; // PINK là cấp cao nhất
+        };
+    }
+}
