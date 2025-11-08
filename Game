@@ -1,0 +1,179 @@
+import java.io.*;
+import java.util.*;
+
+public class Game {
+
+    private List<Card> merchantCards;
+    private List<PointCard> pointCards;
+    private Player player;
+    private Scanner input;
+
+    public Game(String deckFile) throws IOException {
+        this.merchantCards = new ArrayList<>();
+        this.pointCards = new ArrayList<>();
+        this.player = new Player();
+        this.input = new Scanner(System.in);
+        loadDeck(deckFile);
+    }
+
+    private void loadDeck(String fileName) throws IOException {
+        BufferedReader br = new BufferedReader(new FileReader(fileName));
+        String line;
+        while ((line = br.readLine()) != null) {
+            line = line.trim();
+            if (line.equalsIgnoreCase("Trade")) {
+                Map<Gem, Integer> cost = parseGemLine(br.readLine());
+                Map<Gem, Integer> value = parseGemLine(br.readLine());
+                merchantCards.add(new TradeCard(cost, value));
+            } else if (line.equalsIgnoreCase("Upgrade")) {
+                int upgrades = Integer.parseInt(br.readLine().trim());
+                merchantCards.add(new UpgradeCard(upgrades));
+            } else if (line.equalsIgnoreCase("Point")) {
+                Map<Gem, Integer> cost = parseGemLine(br.readLine());
+                int points = Integer.parseInt(br.readLine().trim());
+                pointCards.add(new PointCard(cost, points));
+            }
+        }
+        br.close();
+    }
+
+    private Map<Gem, Integer> parseGemLine(String line) {
+        Map<Gem, Integer> map = new EnumMap<>(Gem.class);
+        String[] parts = line.split(",");
+        for (int i = 0; i < parts.length && i < Gem.values().length; i++) {
+            int v = Integer.parseInt(parts[i].trim());
+            if (v > 0) map.put(Gem.values()[i], v);
+        }
+        return map;
+    }
+
+    private void printMenu() {
+        System.out.println("Would you like to:");
+        System.out.println("0. Play a card");
+        System.out.println("1. Rest");
+        System.out.println("2. Buy a Merchant Card");
+        System.out.println("3. Claim a Point Card");
+        System.out.print("Enter your selection: ");
+    }
+
+    private void printMerchantCards() {
+        System.out.println("======================");
+        System.out.println("Current Merchant Cards");
+        System.out.println("======================");
+        for (int i = 0; i < merchantCards.size(); i++) {
+            System.out.println(i + ". " + merchantCards.get(i));
+        }
+    }
+
+    private void printPointCards() {
+        System.out.println("===================");
+        System.out.println("Current Point Cards");
+        System.out.println("===================");
+        for (int i = 0; i < pointCards.size(); i++) {
+            System.out.println(i + ". " + pointCards.get(i));
+        }
+    }
+
+    public void play() {
+        System.out.println("Let's Play Decade!");
+        while (true) {
+            if (player.hasFivePointCards() || pointCards.isEmpty()) {
+                System.out.println("The player scored " + player.score() + " points!");
+                break;
+            }
+            printMenu();
+            int choice = readInt();
+            switch (choice) {
+                case 0 -> playCard();
+                case 1 -> {
+                    player.rest();
+                    System.out.println("You rested and refilled your hand.");
+                }
+                case 2 -> buyMerchantCard();
+                case 3 -> claimPointCard();
+                default -> System.out.println("Invalid selection.");
+            }
+        }
+    }
+
+    private void playCard() {
+        System.out.println("============");
+        System.out.println("Current Hand");
+        System.out.println("============");
+        player.printHand();
+        System.out.println("============");
+        System.out.println("You have the following gems:");
+        player.printCaravan();
+        System.out.print("Which card would you like to play?\nEnter your selection: ");
+        int pos = readInt();
+        if (player.canPlay(pos)) {
+            player.play(pos);
+            System.out.println("You played the card.");
+            System.out.println("You have the following gems:");
+            player.printCaravan();
+        } else {
+            System.out.println("You cannot play that card.");
+        }
+    }
+
+    private void buyMerchantCard() {
+        printMerchantCards();
+        System.out.println("======================");
+        System.out.print("You have the following gems: ");
+        player.printCaravan();
+        System.out.print("Which card would you like to buy?\nEnter your selection: ");
+        int pos = readInt();
+        if (pos < 0 || pos >= merchantCards.size()) {
+            System.out.println("Invalid selection.");
+            return;
+        }
+        if (player.canBuy(pos)) {
+            player.buy(pos, merchantCards.remove(pos));
+            System.out.println("You bought the card.");
+        } else {
+            System.out.println("You cannot buy that card.");
+        }
+    }
+
+    private void claimPointCard() {
+        printPointCards();
+        System.out.println("===================");
+        System.out.print("You have the following gems: ");
+        player.printCaravan();
+        System.out.print("Which card would you like to claim?\nEnter your selection: ");
+        int pos = readInt();
+        if (pos < 0 || pos >= pointCards.size()) {
+            System.out.println("Invalid selection.");
+            return;
+        }
+        PointCard c = pointCards.get(pos);
+        if (player.canClaim(c)) {
+            player.claim(c);
+            pointCards.remove(pos);
+            System.out.println("You claimed the card.");
+        } else {
+            System.out.println("You cannot claim that card.");
+        }
+    }
+
+    private int readInt() {
+        while (!input.hasNextInt()) {
+            input.next();
+            System.out.print("Enter a number: ");
+        }
+        return input.nextInt();
+    }
+
+    public static void main(String[] args) {
+        if (args.length < 1) {
+            System.out.println("Usage: java Game <deckfile>");
+            return;
+        }
+        try {
+            Game game = new Game(args[0]);
+            game.play();
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+}
